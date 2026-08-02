@@ -1,0 +1,8 @@
+name=Survivor Stats UI
+id=SurvivorStatsUI
+poster=poster.png
+icon=icon.png
+description=<RGB:0.95,0.55,0.16>Painel independente para a Build 42.20.<LINE><RGB:0.8,0.8,0.8>Arraste, redimensione e acompanhe as estatisticas do personagem em tempo real.
+author=PIGZEIRA
+modversion=1.0.0
+versionMin=42.20

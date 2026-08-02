@@ -1,0 +1,273 @@
+require "ISUI/ISPanel"
+require "ISUI/ISResizeWidget"
+require "SurvivorStatsUI/SSU_Style"
+
+SSU_Panel = ISPanel:derive("SSU_Panel")
+
+local CONFIG_FILE = "SurvivorStatsUI.ini"
+local EXPANDED_HEIGHT = 149
+local COLLAPSED_HEIGHT = 28
+local MIN_WIDTH = 220
+local MIN_HEIGHT = 132
+local MAX_WIDTH = 520
+local MAX_HEIGHT = 320
+local ICON_PATH = "media/ui/SurvivorStatsUI/"
+local ICONS = {
+    days = getTexture(ICON_PATH .. "days.png"),
+    kills = getTexture(ICON_PATH .. "kills.png"),
+    distance = getTexture(ICON_PATH .. "distance.png"),
+    weight = getTexture(ICON_PATH .. "weight.png"),
+    time = getTexture(ICON_PATH .. "time.png"),
+}
+
+local function clamp(value, low, high)
+    return math.max(low, math.min(value, high))
+end
+
+local function gameplayIsPaused()
+    local pauseScreen = type(MainScreen) == "table" and MainScreen.instance or nil
+    if pauseScreen and pauseScreen.inGame == true then
+        if pauseScreen.getIsVisible then
+            local ok, visible = pcall(function() return pauseScreen:getIsVisible() end)
+            if ok and visible then return true end
+        elseif pauseScreen.isVisible then
+            local ok, visible = pcall(function() return pauseScreen:isVisible() end)
+            if ok and visible then return true end
+        end
+    end
+    if type(isGamePaused) == "function" then
+        local ok, paused = pcall(isGamePaused)
+        if ok and paused then return true end
+    end
+    if type(getGameSpeed) == "function" then
+        local ok, speed = pcall(getGameSpeed)
+        if ok and tonumber(speed) and tonumber(speed) <= 0 then return true end
+    end
+    return false
+end
+
+function SSU_Panel:new(playerIndex, player)
+    local width = 264
+    local x = getCore():getScreenWidth() - width - 28
+    local o = ISPanel:new(x, 160, width, EXPANDED_HEIGHT)
+    setmetatable(o, self)
+    self.__index = self
+    o.playerIndex = playerIndex
+    o.player = player
+    o.moveWithMouse = true
+    o.background = false
+    o.borderColor.a = 0
+    o.collapsed = false
+    o.distance = 0
+    o.lastX = nil
+    o.lastY = nil
+    o.headerHeight = COLLAPSED_HEIGHT
+    o.expandedWidth = width
+    o.expandedHeight = EXPANDED_HEIGHT
+    o.minimumWidth = MIN_WIDTH
+    o.minimumHeight = MIN_HEIGHT
+    return o
+end
+
+function SSU_Panel:initialise()
+    ISPanel.initialise(self)
+    self:readConfig()
+end
+
+function SSU_Panel:createChildren()
+    ISPanel.createChildren(self)
+    local size = 13
+    local widget = ISResizeWidget:new(self.width - size, self.height - size, size, size, self)
+    widget.anchorLeft = false
+    widget.anchorRight = true
+    widget.anchorTop = false
+    widget.anchorBottom = true
+    widget:initialise()
+    widget:setVisible(not self.collapsed)
+    self:addChild(widget)
+    self.resizeWidget = widget
+end
+
+function SSU_Panel:getPlayer()
+    return self.player
+end
+
+function SSU_Panel:setPlayer(playerIndex, player)
+    self.playerIndex = playerIndex
+    self.player = player
+    self.lastX = nil
+    self.lastY = nil
+end
+
+function SSU_Panel:getCharacterData()
+    if not self.player then return nil end
+    local root = self.player:getModData()
+    root.SurvivorStatsUI = root.SurvivorStatsUI or { distance = 0, playSeconds = 0 }
+    return root.SurvivorStatsUI
+end
+
+function SSU_Panel:setCollapsed(value)
+    if value == true and not self.collapsed then
+        self.expandedWidth = self.width
+        self.expandedHeight = self.height
+    end
+    self.collapsed = value == true
+    if self.collapsed then
+        self:setHeight(COLLAPSED_HEIGHT)
+    else
+        self:setWidth(clamp(self.expandedWidth or self.width, MIN_WIDTH, MAX_WIDTH))
+        self:setHeight(clamp(self.expandedHeight or EXPANDED_HEIGHT, MIN_HEIGHT, MAX_HEIGHT))
+    end
+    if self.resizeWidget then self.resizeWidget:setVisible(not self.collapsed) end
+    self:writeConfig()
+end
+
+function SSU_Panel:onMouseDown(x, y)
+    if x >= self.width - 31 and y <= self.headerHeight then
+        self:setCollapsed(not self.collapsed)
+        return true
+    end
+    return ISPanel.onMouseDown(self, x, y)
+end
+
+function SSU_Panel:onMouseUp(x, y)
+    local result = ISPanel.onMouseUp(self, x, y)
+    self:keepOnScreen()
+    self:writeConfig()
+    return result
+end
+
+function SSU_Panel:keepOnScreen()
+    local sw, sh = getCore():getScreenWidth(), getCore():getScreenHeight()
+    self:setX(clamp(self:getX(), 0, math.max(0, sw - self.width)))
+    self:setY(clamp(self:getY(), 0, math.max(0, sh - self.height)))
+end
+
+function SSU_Panel:update()
+    ISPanel.update(self)
+    local now = getTimestampMs()
+    if self._playLastMs then
+        local elapsed = math.max(0, now - self._playLastMs)
+        if elapsed <= 5000 and not gameplayIsPaused() then
+            local data = self:getCharacterData()
+            if data then
+                data.playSeconds = math.max(0, tonumber(data.playSeconds) or 0) + (elapsed / 1000)
+            end
+        end
+    end
+    self._playLastMs = now
+
+    if self.collapsed then return end
+
+    local width = clamp(self.width, MIN_WIDTH, math.min(MAX_WIDTH, getCore():getScreenWidth()))
+    local height = clamp(self.height, MIN_HEIGHT, math.min(MAX_HEIGHT, getCore():getScreenHeight()))
+    if width ~= self.width then self:setWidth(width) end
+    if height ~= self.height then self:setHeight(height) end
+
+    if width ~= self._lastWidth or height ~= self._lastHeight then
+        self._lastWidth = width
+        self._lastHeight = height
+        self.expandedWidth = width
+        self.expandedHeight = height
+        self._saveSizeAt = getTimestampMs() + 500
+    elseif self._saveSizeAt and getTimestampMs() >= self._saveSizeAt then
+        self._saveSizeAt = nil
+        self:writeConfig()
+    end
+end
+
+function SSU_Panel:addMovementSample()
+    if not self.player then return end
+    local x, y = self.player:getX(), self.player:getY()
+    if self.lastX then
+        local dx, dy = x - self.lastX, y - self.lastY
+        local delta = math.sqrt(dx * dx + dy * dy)
+        if delta <= 4 then
+            local data = self:getCharacterData()
+            if data then
+                data.distance = math.max(0, tonumber(data.distance) or 0) + delta
+                self.distance = data.distance
+            end
+        end
+    end
+    self.lastX, self.lastY = x, y
+end
+
+function SSU_Panel:getRows()
+    local player = self.player
+    if not player then return {} end
+    local data = self:getCharacterData()
+    self.distance = data and math.max(0, tonumber(data.distance) or 0) or 0
+    local hours = math.max(0, tonumber(player:getHoursSurvived()) or 0)
+    local timeOfDay = tonumber(getGameTime():getTimeOfDay()) or 0
+    local playSeconds = math.max(0, math.floor(tonumber(data and data.playSeconds) or 0))
+    local playHours = math.floor(playSeconds / 3600)
+    local playMinutes = math.floor((playSeconds % 3600) / 60)
+    local playRemainingSeconds = playSeconds % 60
+    local weight = player:getNutrition() and player:getNutrition():getWeight() or 0
+    return {
+        { "Zumbis abatidos", tostring(player:getZombieKills()), ICONS.kills },
+        { "Distancia percorrida", string.format("%.2f km", self.distance / 1000), ICONS.distance },
+        { "Peso corporal", string.format("%.1f kg", weight), ICONS.weight },
+        { "Tempo de jogo", string.format("%02d:%02d:%02d", playHours, playMinutes, playRemainingSeconds), ICONS.time },
+    }, math.floor(hours / 24), timeOfDay / 24
+end
+
+function SSU_Panel:prerender()
+    SSU_Style.drawWindow(self, self.width, self.height, self.headerHeight)
+    local c = SSU_Style.colors
+    local rows, survivedDays, dayProgress = self:getRows()
+    local titleY = math.floor((self.headerHeight - getTextManager():getFontHeight(UIFont.Small)) / 2)
+    if ICONS.days then self:drawTextureScaled(ICONS.days, 6, 4, 20, 20, 1, 1, 1, 1) end
+    self:drawText("ESTATISTICAS", 31, titleY, c.text.r, c.text.g, c.text.b, 1, UIFont.Small)
+    self:drawTextRight("DIA " .. tostring(survivedDays or 0), self.width - 29, titleY, c.dim.r, c.dim.g, c.dim.b, 1, UIFont.Small)
+    self:drawTextCentre(self.collapsed and "+" or "-", self.width - 13, titleY - 1, c.accent.r, c.accent.g, c.accent.b, 1, UIFont.Medium)
+    if self.collapsed then return end
+    local top = self.headerHeight + 5
+    local barY = self.height - 14
+    local rowH = math.max(22, math.floor((barY - top - 3) / math.max(1, #rows)))
+    local iconSize = math.max(16, math.min(24, rowH - 6))
+    for i, row in ipairs(rows) do
+        local y = top + (i - 1) * rowH
+        SSU_Style.drawRow(self, 6, y, self.width - 12, rowH - 1, i % 2 == 0)
+        if row[3] then
+            self:drawTextureScaled(row[3], 10, y + math.floor((rowH - iconSize) / 2), iconSize, iconSize, 1, 1, 1, 1)
+        end
+        local textY = y + math.floor((rowH - getTextManager():getFontHeight(UIFont.Small)) / 2) - 1
+        self:drawText(row[1], 15 + iconSize, textY, c.dim.r, c.dim.g, c.dim.b, 1, UIFont.Small)
+        self:drawTextRight(row[2], self.width - 10, textY, c.text.r, c.text.g, c.text.b, 1, UIFont.Small)
+    end
+    SSU_Style.drawProgressBar(self, 7, self.height - 14, self.width - 14, 8, dayProgress)
+end
+
+function SSU_Panel:readConfig()
+    local reader = getFileReader(CONFIG_FILE, false)
+    if not reader then return end
+    local values = {}
+    local line = reader:readLine()
+    while line do
+        local key, value = string.match(line, "^([^=]+)=(.*)$")
+        if key then values[key] = value end
+        line = reader:readLine()
+    end
+    reader:close()
+    self:setX(tonumber(values.x) or self:getX())
+    self:setY(tonumber(values.y) or self:getY())
+    self.expandedWidth = clamp(tonumber(values.width) or self.width, MIN_WIDTH, MAX_WIDTH)
+    self.expandedHeight = clamp(tonumber(values.height) or EXPANDED_HEIGHT, MIN_HEIGHT, MAX_HEIGHT)
+    self:setWidth(self.expandedWidth)
+    self.collapsed = values.collapsed == "true"
+    self:setHeight(self.collapsed and COLLAPSED_HEIGHT or self.expandedHeight)
+    self:keepOnScreen()
+end
+
+function SSU_Panel:writeConfig()
+    local writer = getFileWriter(CONFIG_FILE, true, false)
+    if not writer then return end
+    writer:write("x=" .. tostring(math.floor(self:getX())) .. "\n")
+    writer:write("y=" .. tostring(math.floor(self:getY())) .. "\n")
+    writer:write("width=" .. tostring(math.floor(self.expandedWidth or self.width)) .. "\n")
+    writer:write("height=" .. tostring(math.floor(self.expandedHeight or EXPANDED_HEIGHT)) .. "\n")
+    writer:write("collapsed=" .. tostring(self.collapsed) .. "\n")
+    writer:close()
+end

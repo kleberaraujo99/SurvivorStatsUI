@@ -1,0 +1,10 @@
+# Arquivos locais e pacotes de release
+*.zip
+*.log
+SurvivorStatsUI.ini
+tmp/
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
+

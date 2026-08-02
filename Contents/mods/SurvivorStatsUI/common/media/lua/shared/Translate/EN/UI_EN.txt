@@ -1,0 +1,15 @@
+UI_EN = {
+    UI_SSU_Title = "SURVIVOR STATS",
+    UI_SSU_Days = "Days survived",
+    UI_SSU_Kills = "Zombies killed",
+    UI_SSU_Distance = "Distance travelled",
+    UI_SSU_Weight = "Body weight",
+    UI_SSU_Time = "Time survived",
+    UI_SSU_HoursShort = "h",
+    UI_SSU_MinutesShort = "min",
+    UI_SSU_KilometersShort = "km",
+    UI_SSU_KilogramsShort = "kg",
+    UI_SSU_Collapse = "Collapse panel",
+    UI_SSU_Expand = "Expand panel",
+}
+

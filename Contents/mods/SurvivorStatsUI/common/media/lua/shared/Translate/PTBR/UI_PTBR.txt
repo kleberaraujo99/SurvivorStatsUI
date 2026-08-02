@@ -1,0 +1,14 @@
+UI_PTBR = {
+    UI_SSU_Title = "ESTATISTICAS",
+    UI_SSU_Days = "Dias sobrevividos",
+    UI_SSU_Kills = "Zumbis abatidos",
+    UI_SSU_Distance = "Distancia percorrida",
+    UI_SSU_Weight = "Peso corporal",
+    UI_SSU_Time = "Tempo de jogo",
+    UI_SSU_HoursShort = "h",
+    UI_SSU_MinutesShort = "min",
+    UI_SSU_KilometersShort = "km",
+    UI_SSU_KilogramsShort = "kg",
+    UI_SSU_Collapse = "Recolher painel",
+    UI_SSU_Expand = "Expandir painel",
+}
