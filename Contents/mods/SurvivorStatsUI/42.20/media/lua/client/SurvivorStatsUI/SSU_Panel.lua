@@ -46,6 +46,28 @@ local function gameplayIsPaused()
     return false
 end
 
+local function getLiveWeightTrend(nutrition)
+    if not nutrition then return 0, false end
+
+    local hasTrendAPI = nutrition.isIncWeightLot or nutrition.isIncWeight or nutrition.isDecWeight
+    if not hasTrendAPI then return 0, false end
+
+    if nutrition.isIncWeightLot then
+        local ok, active = pcall(function() return nutrition:isIncWeightLot() end)
+        if ok and active then return 1, true end
+    end
+    if nutrition.isIncWeight then
+        local ok, active = pcall(function() return nutrition:isIncWeight() end)
+        if ok and active then return 1, true end
+    end
+    if nutrition.isDecWeight then
+        local ok, active = pcall(function() return nutrition:isDecWeight() end)
+        if ok and active then return -1, true end
+    end
+
+    return 0, true
+end
+
 function SSU_Panel:new(playerIndex, player)
     local width = 264
     local x = getCore():getScreenWidth() - width - 28
@@ -102,7 +124,12 @@ end
 function SSU_Panel:getCharacterData()
     if not self.player then return nil end
     local root = self.player:getModData()
-    root.SurvivorStatsUI = root.SurvivorStatsUI or { distance = 0, playSeconds = 0 }
+    root.SurvivorStatsUI = root.SurvivorStatsUI or {
+        distance = 0,
+        playSeconds = 0,
+        lastWeight = nil,
+        weightTrend = 0,
+    }
     return root.SurvivorStatsUI
 end
 
@@ -204,11 +231,32 @@ function SSU_Panel:getRows()
     local playHours = math.floor(playSeconds / 3600)
     local playMinutes = math.floor((playSeconds % 3600) / 60)
     local playRemainingSeconds = playSeconds % 60
-    local weight = player:getNutrition() and player:getNutrition():getWeight() or 0
+    local nutrition = player:getNutrition()
+    local weight = nutrition and nutrition:getWeight() or 0
+    local liveWeightTrend, hasLiveTrend = getLiveWeightTrend(nutrition)
+    if data then
+        if hasLiveTrend then
+            data.weightTrend = liveWeightTrend
+        else
+            local previousWeight = tonumber(data.lastWeight)
+            if previousWeight then
+                local difference = weight - previousWeight
+                if difference >= 0.01 then
+                    data.weightTrend = 1
+                    data.lastWeight = weight
+                elseif difference <= -0.01 then
+                    data.weightTrend = -1
+                    data.lastWeight = weight
+                end
+            else
+                data.lastWeight = weight
+            end
+        end
+    end
     return {
         { "Zumbis abatidos", tostring(player:getZombieKills()), ICONS.kills },
         { "Distancia percorrida", string.format("%.2f km", self.distance / 1000), ICONS.distance },
-        { "Peso corporal", string.format("%.1f kg", weight), ICONS.weight },
+        { "Peso corporal", string.format("%.1f kg", weight), ICONS.weight, data and tonumber(data.weightTrend) or 0 },
         { "Tempo de jogo", string.format("%02d:%02d:%02d", playHours, playMinutes, playRemainingSeconds), ICONS.time },
     }, math.floor(hours / 24), timeOfDay / 24
 end
@@ -235,6 +283,10 @@ function SSU_Panel:prerender()
         end
         local textY = y + math.floor((rowH - getTextManager():getFontHeight(UIFont.Small)) / 2) - 1
         self:drawText(row[1], 15 + iconSize, textY, c.dim.r, c.dim.g, c.dim.b, 1, UIFont.Small)
+        if row[4] == 1 or row[4] == -1 then
+            local valueWidth = getTextManager():MeasureStringX(UIFont.Small, row[2])
+            SSU_Style.drawTrendArrow(self, self.width - 18 - valueWidth, y + math.floor((rowH - 11) / 2), row[4])
+        end
         self:drawTextRight(row[2], self.width - 10, textY, c.text.r, c.text.g, c.text.b, 1, UIFont.Small)
     end
     SSU_Style.drawProgressBar(self, 7, self.height - 14, self.width - 14, 8, dayProgress)

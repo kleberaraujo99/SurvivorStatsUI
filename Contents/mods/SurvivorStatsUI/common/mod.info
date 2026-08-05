@@ -4,4 +4,4 @@ poster=poster.png
 icon=icon.png
 description=<RGB:0.95,0.55,0.16>Painel independente de estatisticas do sobrevivente.<LINE><RGB:0.8,0.8,0.8>Acompanhe dias, abates, distancia, peso e tempo real jogado.
 author=PIGZEIRA
-modversion=1.0.0
+modversion=1.1.1

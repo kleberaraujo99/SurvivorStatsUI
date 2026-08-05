@@ -2,6 +2,22 @@
 
 Todas as alteracoes relevantes do Survivor Stats UI serao documentadas aqui.
 
+## 1.1.1 - 2026-08-05
+
+### Alterado
+
+- Cantos do painel redesenhados com acabamento arredondado.
+- Fundo, cabecalho e linhas ficaram mais transparentes.
+- Indicador de peso passou a usar a tendencia nutricional nativa do jogo.
+
+## 1.1.0 - 2026-08-05
+
+### Adicionado
+
+- Seta verde para indicar ganho de peso.
+- Seta vermelha para indicar perda de peso.
+- Tendencia de peso persistente e separada por personagem.
+
 ## 1.0.0 - 2026-08-02
 
 ### Adicionado
@@ -14,4 +30,3 @@ Todas as alteracoes relevantes do Survivor Stats UI serao documentadas aqui.
 - Barra de progresso do dia atual.
 - Cinco icones originais com identidade visual propria.
 - Interface em portugues brasileiro.
-

@@ -10,6 +10,7 @@ description=• Dias sobrevividos
 description=• Zumbis abatidos
 description=• Distância percorrida
 description=• Peso corporal atual
+description=• Indicador de ganho ou perda de peso
 description=• Tempo real jogado com o personagem
 description=[h2]✨ PRINCIPAIS RECURSOS[/h2]
 description=• Interface limpa e discreta
