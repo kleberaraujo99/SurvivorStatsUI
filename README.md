@@ -10,12 +10,14 @@ Mod independente e sem dependencias para Project Zomboid Build 42.20.
 - `42.20/`: codigo Lua exclusivo da Build 42.20.
 - `workshop.txt` e `preview.png`: publicacao no Steam Workshop.
 
-## Recursos da versao 1.1.0
+## Recursos da versao 1.3.1
 
 - Painel arrastavel e recolhivel.
 - Painel redimensionavel pela alca no canto inferior direito.
 - Dias sobrevividos e tempo real jogado por personagem.
 - Total de zumbis abatidos.
+- Zumbis mortos no dia atual, com reinicio automatico.
+- Ritmo projetado de abates do dia atual.
 - Distancia percorrida persistente e separada por personagem.
 - Peso corporal atual.
 - Indicador verde/vermelho para ganho ou perda de peso.
@@ -23,6 +25,14 @@ Mod independente e sem dependencias para Project Zomboid Build 42.20.
 - Nenhuma dependencia externa.
 - Conjunto proprio de icones de estatisticas incorporado ao painel.
 - Barra visual com o progresso do dia atual no mundo.
+- Menu no botao direito para ocultar estatisticas individualmente.
+- Temas verde, laranja, azul, vermelho e roxo.
+
+## Personalizacao
+
+Clique com o botao direito sobre o painel. Em `Estatisticas visiveis`, escolha
+o que deve aparecer. Em `Cores do painel`, selecione o tema desejado. Todas as
+opcoes sao salvas automaticamente.
 
 O arquivo de configuracao visual e criado em `Zomboid/Lua/SurvivorStatsUI.ini`.
 Os dados de cada personagem ficam em `ModData`, junto ao proprio save.

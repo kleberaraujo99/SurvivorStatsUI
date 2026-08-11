@@ -23,7 +23,11 @@ local function onSave()
     if panel then panel:writeConfig() end
 end
 
+local function onNewDay()
+    if panel then panel:resetDailyKills() end
+end
+
 Events.OnCreatePlayer.Add(onCreatePlayer)
 Events.OnPlayerMove.Add(onPlayerMove)
 Events.OnSave.Add(onSave)
-
+Events.EveryDays.Add(onNewDay)

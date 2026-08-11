@@ -10,6 +10,48 @@ SSU_Style.colors = {
     dim = { r = 0.66, g = 0.66, b = 0.61 },
 }
 
+SSU_Style.themes = {
+    verde = {
+        accent = { r = 0.39, g = 0.78, b = 0.38 },
+        border = { r = 0.31, g = 0.29, b = 0.24 },
+        body = { r = 0.13, g = 0.125, b = 0.105 },
+        row = { r = 0.18, g = 0.17, b = 0.14 },
+    },
+    laranja = {
+        accent = { r = 0.95, g = 0.53, b = 0.14 },
+        border = { r = 0.46, g = 0.31, b = 0.16 },
+        body = { r = 0.14, g = 0.115, b = 0.085 },
+        row = { r = 0.20, g = 0.15, b = 0.10 },
+    },
+    azul = {
+        accent = { r = 0.28, g = 0.66, b = 0.92 },
+        border = { r = 0.22, g = 0.35, b = 0.46 },
+        body = { r = 0.085, g = 0.115, b = 0.14 },
+        row = { r = 0.10, g = 0.16, b = 0.20 },
+    },
+    vermelho = {
+        accent = { r = 0.86, g = 0.30, b = 0.25 },
+        border = { r = 0.45, g = 0.23, b = 0.20 },
+        body = { r = 0.14, g = 0.085, b = 0.08 },
+        row = { r = 0.20, g = 0.11, b = 0.10 },
+    },
+    roxo = {
+        accent = { r = 0.66, g = 0.43, b = 0.88 },
+        border = { r = 0.36, g = 0.27, b = 0.45 },
+        body = { r = 0.115, g = 0.09, b = 0.14 },
+        row = { r = 0.16, g = 0.115, b = 0.20 },
+    },
+}
+
+function SSU_Style.setTheme(name)
+    local theme = SSU_Style.themes[name] or SSU_Style.themes.verde
+    for _, key in ipairs({ "accent", "border", "body", "row" }) do
+        local source = theme[key]
+        local target = SSU_Style.colors[key]
+        target.r, target.g, target.b = source.r, source.g, source.b
+    end
+end
+
 local function drawRoundedFill(element, x, y, width, height, color)
     if width < 8 or height < 8 then
         element:drawRect(x, y, width, height, color.a, color.r, color.g, color.b)
