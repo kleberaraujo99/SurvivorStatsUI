@@ -22,7 +22,7 @@ local ICONS = {
 }
 
 local VISIBILITY_OPTIONS = {
-    { key = "days", label = "Dia sobrevivido" },
+    { key = "days", label = "Tempo sobrevivido" },
     { key = "totalKills", label = "Zumbis abatidos" },
     { key = "dailyKills", label = "Zumbis mortos hoje" },
     { key = "killRate", label = "Taxa de abates por dia" },
@@ -304,6 +304,12 @@ function SSU_Panel:getRows()
     local data = self:getCharacterData()
     self.distance = data and math.max(0, tonumber(data.distance) or 0) or 0
     local hours = math.max(0, tonumber(player:getHoursSurvived()) or 0)
+    -- Usa o contador nativo do jogo para respeitar a passagem de dias,
+    -- meses e anos exatamente como o calendario de Project Zomboid.
+    local survivalTime = player:getTimeSurvived()
+    if not survivalTime or survivalTime == "" then
+        survivalTime = tostring(math.floor(hours / 24)) .. " dias"
+    end
     local timeOfDay = tonumber(getGameTime():getTimeOfDay()) or 0
     local playSeconds = math.max(0, math.floor(tonumber(data and data.playSeconds) or 0))
     local playHours = math.floor(playSeconds / 3600)
@@ -346,6 +352,9 @@ function SSU_Panel:getRows()
     local elapsedDayHours = math.max(timeOfDay, 1 / 60)
     local killRate = dailyKills * 24 / elapsedDayHours
     local rows = {}
+    if self.visibleStats.days then
+        table.insert(rows, { "Tempo sobrevivido", tostring(survivalTime), ICONS.days })
+    end
     if self.visibleStats.totalKills then
         table.insert(rows, { "Zumbis abatidos", tostring(totalKills), ICONS.kills })
     end
@@ -364,20 +373,15 @@ function SSU_Panel:getRows()
     if self.visibleStats.playTime then
         table.insert(rows, { "Tempo de jogo", string.format("%02d:%02d:%02d", playHours, playMinutes, playRemainingSeconds), ICONS.time })
     end
-    return rows, math.floor(hours / 24), timeOfDay / 24
+    return rows, survivalTime, timeOfDay / 24
 end
 
 function SSU_Panel:prerender()
     SSU_Style.drawWindow(self, self.width, self.height, self.headerHeight)
     local c = SSU_Style.colors
-    local rows, survivedDays, dayProgress = self:getRows()
+    local rows, _, dayProgress = self:getRows()
     local titleY = math.floor((self.headerHeight - getTextManager():getFontHeight(UIFont.Small)) / 2)
-    if self.visibleStats.days and ICONS.days then self:drawTextureScaled(ICONS.days, 6, 4, 20, 20, 1, 1, 1, 1) end
-    local titleX = self.visibleStats.days and 31 or 10
-    self:drawText("ESTATISTICAS", titleX, titleY, c.text.r, c.text.g, c.text.b, 1, UIFont.Small)
-    if self.visibleStats.days then
-        self:drawTextRight("DIA " .. tostring(survivedDays or 0), self.width - 29, titleY, c.dim.r, c.dim.g, c.dim.b, 1, UIFont.Small)
-    end
+    self:drawText("ESTATISTICAS", 10, titleY, c.text.r, c.text.g, c.text.b, 1, UIFont.Small)
     self:drawTextCentre(self.collapsed and "+" or "-", self.width - 13, titleY - 1, c.accent.r, c.accent.g, c.accent.b, 1, UIFont.Medium)
     if self.collapsed then return end
     local top = self.headerHeight + 5
